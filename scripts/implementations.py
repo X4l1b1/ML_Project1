@@ -51,11 +51,26 @@ def least_squares_GD(y, tx, initial_w, max_iters, gamma):
 
 def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
     """Linear regression using stochastic gradient descent"""
-    pass
+    w = initial_w
+    loss = -1
+    for minibatch_y, minibatch_tx in batch_iter(y, tx, batch_size):
+        for n_iter in range(max_iters):
+            # Compute loss and gradient then update accordingly the weights
+            loss = compute_mae_loss(minibatch_y, minibatch_tx, w)
+            gradient = compute_gradient(minibatch_y, minibatch_tx, w)
+            w -= gamma * gradient
+            # Print each iteration for debugging purpose
+            print("Gradient Descent({bi}/{ti}): loss={l}, w0={w0}, w1={w1}".format(
+                  bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
+    return loss, w
 
 def least_squares(y, tx):
     """Least squares regression using normal equations"""
-    pass
+    w = np.linalg.solve(tx.T@tx, tx.T@y)
+    error = y - tx@w
+    loss = 1/(2*len(y)) * error.T@error
+
+    return loss, w
 
 def ridge_regression(y, tx, lambda_):
     """Ridge regression using normal equations"""
