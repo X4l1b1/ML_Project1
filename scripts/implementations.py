@@ -4,18 +4,18 @@
 # Authors: Arthur Passuello, François Quellec
 # ***************************************************
 import numpy as np
-
+from proj1_helpers import *
 
 def compute_mse_loss(y, tx, w):
     """Calculate the loss using mse"""
     error = y - tx@w
-    loss = 1/(2*len(y)) * error.T@error
+    loss = 1/(2*len(y)) * error@error
     return loss
 
 def compute_mae_loss(y, tx, w):
     """Calculate the loss using mae"""
     error = y - tx@w
-    loss = np.mean(np.abs(e))
+    loss = np.mean(np.abs(error))
     return loss
 
 def compute_gradient(y, tx, w):
@@ -31,6 +31,11 @@ def standardize(x):
     std_x = np.std(x, axis=0)
     x = x / std_x
     return x, mean_x, std_x
+
+def build_poly(x, degree):
+    """polynomial basis functions for input data x, for j=0 up to j=degree."""
+    return np.array([np.power(x,i) for i in range(degree + 1)]).T
+    
 
 def least_squares_GD(y, tx, initial_w, max_iters, gamma):
     """Linear regression using gradient descent"""
@@ -53,6 +58,7 @@ def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
     """Linear regression using stochastic gradient descent"""
     w = initial_w
     loss = -1
+    batch_size = 5
     for minibatch_y, minibatch_tx in batch_iter(y, tx, batch_size):
         for n_iter in range(max_iters):
             # Compute loss and gradient then update accordingly the weights
@@ -67,14 +73,15 @@ def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
 def least_squares(y, tx):
     """Least squares regression using normal equations"""
     w = np.linalg.solve(tx.T@tx, tx.T@y)
-    error = y - tx@w
-    loss = 1/(2*len(y)) * error.T@error
-
+    loss = compute_mse_loss(y, tx, w)
     return loss, w
 
 def ridge_regression(y, tx, lambda_):
     """Ridge regression using normal equations"""
-    pass
+    omega = 2 * tx.shape[0] * lambda_ * np.identity(tx.shape[1])
+    w = np.linalg.solve(tx.T@tx + omega, tx.T@y)
+    loss = compute_mse_loss(y, tx, w)
+    return loss, w
 
 def logistic_regression(y, tx, initial_w, max_iters, gamma):
     """Logistic regression using gradient descent or SGD"""
