@@ -24,8 +24,7 @@ def compute_mae_loss(y, tx, w):
 
 def compute_log_loss(y, tx, w):
     """compute the cost by negative log likelihood."""
-    return np.sum(np.log(1 + np.exp(tx@w)) - y*tx@w)
-
+    return np.sum(np.log(1 + np.exp(tx@w)) - y*(tx@w))
 
 #####################################################
 #              Activation Functions                 #
@@ -58,6 +57,14 @@ def standardize(x):
     std_x = np.std(x, axis=0)
     x = x / std_x
     return x, mean_x, std_x
+
+def normalize(x):
+    """Standardize the original data set."""
+    max_x = np.max(x, axis=0)
+    min_x = np.min(x, axis=0)
+    x = (x-min_x) / (max_x-min_x)
+
+    return x
 
 def build_poly(x, degree):
     """polynomial basis functions for input data x, for j=0 up to j=degree."""
@@ -103,41 +110,43 @@ def least_squares_GD(y, tx, initial_w, max_iters, gamma):
 
     for n_iter in range(max_iters):
         # Compute loss and gradient then update accordingly the weights
-        loss = compute_mae_loss(y, tx, w)
+        loss = compute_mse_loss(y, tx, w)
         gradient = calculate_least_square_gradient(y, tx, w)
         w -= gamma * gradient
 
         # Print each iteration for debugging purpose
-        print("Gradient Descent({bi}/{ti}): loss={l}, w0={w0}, w1={w1}".format(
-              bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
+        #print("Gradient Descent({bi}/{ti}): loss={l}, w0={w0}, w1={w1}".format(
+        #      bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
 
     # Final loss
-    loss = compute_mae_loss(y, tx, w)
+    loss = compute_mse_loss(y, tx, w)
 
     # visualization
-    print("loss={l}".format(l=loss))
+    #print("loss={l}".format(l=loss))
 
     return loss, w
 
-def least_squares_SGD(y, tx, initial_w, max_iters, gamma, batch_size=5):
+def least_squares_SGD(y, tx, initial_w, max_iters, gamma, batch_number=5):
     """Linear regression using stochastic gradient descent"""
     w = initial_w
     loss = -1
+    batch_size = int(len(tx)/batch_number)
+
     for minibatch_y, minibatch_tx in batch_iter(y, tx, batch_size):
         for n_iter in range(max_iters):
             # Compute loss and gradient then update accordingly the weights
-            loss = compute_mae_loss(minibatch_y, minibatch_tx, w)
+            loss = compute_mse_loss(minibatch_y, minibatch_tx, w)
             gradient = calculate_least_square_gradient(minibatch_y, minibatch_tx, w)
             w -= gamma * gradient
             # Print each iteration for debugging purpose
-            print("Gradient Descent({bi}/{ti}): loss={l}, w0={w0}, w1={w1}".format(
-                  bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
+            #print("Gradient Descent({bi}/{ti}): loss={l}, w0={w0}, w1={w1}".format(
+            #      bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
 
     # Final loss
-    loss = compute_mae_loss(y, tx, w)
+    loss = compute_mse_loss(y, tx, w)
 
     # visualization
-    print("loss={l}".format(l=loss))
+    #print("loss={l}".format(l=loss))
 
     return loss, w
 
@@ -169,8 +178,8 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
         grad = compute_logistic_gradient(y, tx, w)
         w -= gamma*grad 
         # log info
-        if iter % 100 == 0:
-            print("Current iteration={i}, loss={l}".format(i=iter, l=loss))
+        #if iter % 100 == 0:
+        #    print("Current iteration={i}, loss={l}".format(i=iter, l=loss))
         # converge criterion
         losses.append(loss)
         if len(losses) > 1 and np.abs(losses[-1] - losses[-2]) < threshold:
@@ -180,7 +189,7 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
     loss = compute_log_loss(y, tx, w)
 
     # visualization
-    print("loss={l}".format(l=loss))
+    #print("loss={l}".format(l=loss))
 
     return loss, w
 
@@ -201,18 +210,18 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
         w -= gamma*gradient
 
         # log info
-        if iter % 100 == 0:
-            print("Current iteration={i}, loss={l}".format(i=iter, l=loss))
+        #if iter % 100 == 0:
+        #    print("Current iteration={i}, loss={l}".format(i=iter, l=loss))
         # converge criterion
         losses.append(loss)
         if len(losses) > 1 and np.abs(losses[-1] - losses[-2]) < threshold:
             break
 
     # Final loss 
-    loss = calculate_loss(y, tx, w)
+    loss = compute_log_loss(y, tx, w)
 
     # visualization
-    print("loss={l}".format(l=loss))
+    #print("loss={l}".format(l=loss))
 
     return loss, w
     
