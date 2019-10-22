@@ -68,7 +68,11 @@ def normalize(x):
 
 def build_poly(x, degree):
     """polynomial basis functions for input data x, for j=0 up to j=degree."""
-    return np.array([np.power(x,i) for i in range(degree + 1)]).T
+    ret = np.ones((len(x), 1))
+    for i in range(1, degree + 1):
+        ret = np.column_stack((ret, np.power(x,i)))
+    return ret
+
     
 #####################################################
 #              Other Tools                          #
