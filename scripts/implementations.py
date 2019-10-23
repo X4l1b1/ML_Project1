@@ -12,9 +12,7 @@ from proj1_helpers import *
 #####################################################
 def compute_mse_loss(y, tx, w):
     """Calculate the loss using mse"""
-    print("w: ", w)
     error = y - tx@w
-    print("err: ", error)
     loss = error@error/(2*len(y))
     return loss
 
@@ -118,7 +116,7 @@ def least_squares_GD(y, tx, initial_w, max_iters, gamma):
         # Compute loss and gradient then update accordingly the weights
         loss = compute_mse_loss(y, tx, w)
         gradient = calculate_least_square_gradient(y, tx, w)
-        w = w - gamma * gradient
+        w -= gamma * gradient
 
         # Print each iteration for debugging purpose
         #print("Gradient Descent({bi}/{ti}): loss={l}, w0={w0}, w1={w1}".format(
