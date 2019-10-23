@@ -13,7 +13,7 @@ from proj1_helpers import *
 def compute_mse_loss(y, tx, w):
     """Calculate the loss using mse"""
     error = y - tx@w
-    loss = 1/(2*len(y)) * error@error
+    loss = error@error/(2*len(y))
     return loss
 
 def compute_mae_loss(y, tx, w):
@@ -40,7 +40,7 @@ def sigmoid(t):
 def calculate_least_square_gradient(y, tx, w):
     """Compute the gradient of the error for least square equation"""
     error = y - tx@w
-    gradient = -1/len(y) * tx.T@error
+    gradient =  -tx.T@error/len(y)
     return gradient
 
 def compute_logistic_gradient(y, tx, w):
@@ -52,9 +52,9 @@ def compute_logistic_gradient(y, tx, w):
 #####################################################
 def standardize(x):
     """Standardize the original data set."""
-    mean_x = np.mean(x, axis=0)
+    mean_x = np.nanmean(x, axis=0)
     x = x - mean_x
-    std_x = np.std(x, axis=0)
+    std_x = np.nanstd(x, axis=0)
     x = x / std_x
     return x, mean_x, std_x
 
