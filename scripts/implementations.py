@@ -31,7 +31,7 @@ def compute_log_loss(y, tx, w):
 #####################################################
 def sigmoid(t):
     """apply sigmoid activation function on t."""
-    return 1/(1 + np.exp(-t))
+    return 1.0/(1 + np.exp(-t))
 
 
 #####################################################
@@ -214,8 +214,8 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
         w -= gamma*gradient
 
         # log info
-        #if iter % 100 == 0:
-        #    print("Current iteration={i}, loss={l}".format(i=iter, l=loss))
+        if iter % 1000 == 0:
+            print("Current iteration={i}, loss={l}".format(i=iter, l=loss))
         # converge criterion
         losses.append(loss)
         if len(losses) > 1 and np.abs(losses[-1] - losses[-2]) < threshold:
