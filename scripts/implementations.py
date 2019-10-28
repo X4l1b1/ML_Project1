@@ -1,11 +1,11 @@
-# ***************************************************
-# Project 1 : CS-433 Machine Learning Class
-# Various regression models to detect Higgs particles
-# Authors: Arthur Passuello, François Quellec
-# ***************************************************
-import numpy as np
-from proj1_helpers import *
+# ********************************************************** #
+# Project 1 : CS-433 Machine Learning Class                  #
+# Various regression models to detect Higgs particles        #
+# Authors: Arthur Passuello, Francois Quellec, Julien Muster #
+# ********************************************************** #
 
+import numpy as np
+from collections import deque
 
 #####################################################
 #             Loss Functions                        #
@@ -25,13 +25,21 @@ def compute_mae_loss(y, tx, w):
 def compute_log_loss(y, tx, w):
     """compute the cost by negative log likelihood."""
     return np.sum(np.log(1 + np.exp(tx@w)) - y*(tx@w))
-
+   
 #####################################################
 #              Activation Functions                 #
 #####################################################
 def sigmoid(t):
     """apply sigmoid activation function on t."""
-    return 1.0/(1 + np.exp(-t))
+    return 1./(1 + np.exp(-t))
+
+def predict_labels(weights, data):
+    """Generates class predictions given weights, and a test data matrix"""
+    y_pred = np.dot(data, weights)
+    y_pred[np.where(y_pred <= 0)] = -1
+    y_pred[np.where(y_pred > 0)] = 1
+    
+    return y_pred
 
 
 #####################################################
@@ -48,31 +56,107 @@ def compute_logistic_gradient(y, tx, w):
     return tx.T @ (sigmoid(tx@w) - y)
 
 #####################################################
-#              Features processing                  #
+#              Models Definition                    #
 #####################################################
-def standardize(x):
-    """Standardize the original data set."""
-    mean_x = np.nanmean(x, axis=0)
-    x = x - mean_x
-    std_x = np.nanstd(x, axis=0)
-    x = x / std_x
-    return x, mean_x, std_x
 
-def normalize(x):
-    """Standardize the original data set."""
-    max_x = np.max(x, axis=0)
-    min_x = np.min(x, axis=0)
-    x = (x-min_x) / (max_x-min_x)
+def least_squares_GD(y, tx, initial_w, max_iters, gamma):
+    """Linear regression using gradient descent"""
+    w = initial_w
+    loss = -1
 
-    return x
+    for n_iter in range(max_iters):
+        # Compute loss and gradient then update accordingly the weights
+        loss = compute_mse_loss(y, tx, w)
+        gradient = calculate_least_square_gradient(y, tx, w)
+        w -= gamma * gradient
 
-def build_poly(x, degree):
-    """polynomial basis functions for input data x, for j=0 up to j=degree."""
-    ret = np.ones((len(x), 1))
-    for i in range(1, degree + 1):
-        ret = np.column_stack((ret, np.power(x,i)))
-    return ret
+    # Final loss
+    loss = compute_mse_loss(y, tx, w)
 
+    return w, loss
+
+def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
+    """Linear regression using stochastic gradient descent"""
+    batch_size = 1
+    w = initial_w
+    loss = -1
+
+    for minibatch_y, minibatch_tx in batch_iter(y, tx, batch_size):
+        for _ in range(max_iters):
+            # Compute loss and gradient then update accordingly the weights
+            loss = compute_mse_loss(minibatch_y, minibatch_tx, w)
+            gradient = calculate_least_square_gradient(minibatch_y, minibatch_tx, w)
+            w -= gamma * gradient
+
+    # Final loss
+    loss = compute_mse_loss(y, tx, w)
+
+    return w, loss
+
+def least_squares(y, tx):
+    """Least squares regression using normal equations"""
+    w = np.linalg.solve(tx.T@tx, tx.T@y)
+    loss = compute_mse_loss(y, tx, w)
+    return w, loss
+
+def ridge_regression(y, tx, lambda_):
+    """Ridge regression using normal equations"""
+    omega = 2 * tx.shape[0] * lambda_ * np.identity(tx.shape[1])
+    w = np.linalg.solve(tx.T@tx + omega, tx.T@y)
+    loss = compute_mse_loss(y, tx, w)
+    return w, loss
+
+def logistic_regression(y, tx, initial_w, max_iters, gamma):
+    """Logistic regression using gradient descent"""
+
+     # init parameters
+    threshold = 1e-8
+    losses = collections.deque(maxlen=2)
+    w = initial_w
+
+    # start the logistic regression
+    for iter in range(max_iters):
+        # get loss and update w.
+        loss = compute_log_loss(y, tx, w)
+        grad = compute_logistic_gradient(y, tx, w)
+        w -= gamma*grad 
+
+        # converge criterion
+        losses.append(loss)
+        if len(losses) > 1 and np.abs(losses[0] - losses[1]) < threshold:
+            break
+
+    # Final loss
+    loss = compute_log_loss(y, tx, w)
+
+    return w, loss
+
+
+def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
+    """Regularized logistic regression using gradient descent"""
+    
+     # init parameters
+    threshold = 1e-8
+    losses = collections.deque(maxlen=2)
+    w = initial_w
+
+    # start the logistic regression
+    for iter in range(max_iters):
+        # get loss and update w.
+        loss = compute_log_loss(y, tx, w) + lambda_ * lambda_*np.linalg.norm(w)**2
+        gradient = compute_logistic_gradient(y, tx, w) + 2*lambda_*w
+        w -= gamma*gradient
+
+        # converge criterion
+        losses.append(loss)
+        if len(losses) > 1 and np.abs(losses[0] - losses[1]) < threshold:
+            break
+
+
+    # Final loss 
+    loss = compute_log_loss(y, tx, w)
+
+    return w, loss
     
 #####################################################
 #              Other Tools                          #
@@ -103,132 +187,4 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
         if start_index != end_index:
             yield shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]
 
-
-#####################################################
-#              Models Definition                    #
-#####################################################
-def least_squares_GD(y, tx, initial_w, max_iters, gamma):
-    """Linear regression using gradient descent"""
-    w = initial_w
-    loss = -1
-
-    for n_iter in range(max_iters):
-        # Compute loss and gradient then update accordingly the weights
-        loss = compute_mse_loss(y, tx, w)
-        gradient = calculate_least_square_gradient(y, tx, w)
-        w -= gamma * gradient
-
-        # Print each iteration for debugging purpose
-        #print("Gradient Descent({bi}/{ti}): loss={l}, w0={w0}, w1={w1}".format(
-        #      bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
-
-    # Final loss
-    loss = compute_mse_loss(y, tx, w)
-
-    # visualization
-    #print("loss={l}".format(l=loss))
-
-    return loss, w
-
-def least_squares_SGD(y, tx, initial_w, max_iters, gamma, batch_number=5):
-    """Linear regression using stochastic gradient descent"""
-    w = initial_w
-    loss = -1
-    batch_size = int(len(tx)/batch_number)
-
-    for minibatch_y, minibatch_tx in batch_iter(y, tx, batch_size):
-        for n_iter in range(max_iters):
-            # Compute loss and gradient then update accordingly the weights
-            loss = compute_mse_loss(minibatch_y, minibatch_tx, w)
-            gradient = calculate_least_square_gradient(minibatch_y, minibatch_tx, w)
-            w -= gamma * gradient
-            # Print each iteration for debugging purpose
-            #print("Gradient Descent({bi}/{ti}): loss={l}, w0={w0}, w1={w1}".format(
-            #      bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
-
-    # Final loss
-    loss = compute_mse_loss(y, tx, w)
-
-    # visualization
-    #print("loss={l}".format(l=loss))
-
-    return loss, w
-
-def least_squares(y, tx):
-    """Least squares regression using normal equations"""
-    w = np.linalg.solve(tx.T@tx, tx.T@y)
-    loss = compute_mse_loss(y, tx, w)
-    return loss, w
-
-def ridge_regression(y, tx, lambda_):
-    """Ridge regression using normal equations"""
-    omega = 2 * tx.shape[0] * lambda_ * np.identity(tx.shape[1])
-    w = np.linalg.solve(tx.T@tx + omega, tx.T@y)
-    loss = compute_mse_loss(y, tx, w)
-    return loss, w
-
-def logistic_regression(y, tx, initial_w, max_iters, gamma):
-    """Logistic regression using gradient descent"""
-
-     # init parameters
-    threshold = 1e-8
-    losses = []
-    w = initial_w
-
-    # start the logistic regression
-    for iter in range(max_iters):
-        # get loss and update w.
-        loss = compute_log_loss(y, tx, w)
-        grad = compute_logistic_gradient(y, tx, w)
-        w -= gamma*grad 
-        # log info
-        #if iter % 100 == 0:
-        #    print("Current iteration={i}, loss={l}".format(i=iter, l=loss))
-        # converge criterion
-        losses.append(loss)
-        if len(losses) > 1 and np.abs(losses[-1] - losses[-2]) < threshold:
-            break
-
-    # Final loss
-    loss = compute_log_loss(y, tx, w)
-
-    # visualization
-    #print("loss={l}".format(l=loss))
-
-    return loss, w
-
-
-def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
-    """Regularized logistic regression using gradient descent or SGD"""
     
-     # init parameters
-    threshold = 1e-8
-    losses = []
-    w = initial_w
-
-    # start the logistic regression
-    for iter in range(max_iters):
-        # get loss and update w.
-        loss = compute_log_loss(y, tx, w) + lambda_*np.linalg.norm(w) 
-        gradient = compute_logistic_gradient(y, tx, w) + 2*lambda_*w
-        w -= gamma*gradient
-
-        # log info
-        if iter % 1000 == 0:
-            print("Current iteration={i}, loss={l}".format(i=iter, l=loss))
-        # converge criterion
-        losses.append(loss)
-        if len(losses) > 1 and np.abs(losses[-1] - losses[-2]) < threshold:
-            break
-
-    # Final loss 
-    loss = compute_log_loss(y, tx, w)
-
-    # visualization
-    #print("loss={l}".format(l=loss))
-
-    return loss, w
-    
-def custom_model(y, tx, initial_w, max_iters, gamma):
-    """Custom"""
-    pass
