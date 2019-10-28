@@ -24,8 +24,7 @@ Numpy v1.17 or higher
 
 * Simply clone or download the current project from github
 * Download the test and train datasets [here](https://www.aicrowd.com/challenges/epfl-machine-learning-higgs-2019)
-* Create a `data`folder a the root of the project
-* Put the downloaded datasets in the `data` folder
+* Put the downloaded datasets in the same directory as the `run.py` file
 
 ### Run our best model
 

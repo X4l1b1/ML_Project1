@@ -9,9 +9,9 @@ from implementations import ridge_regression, predict_labels
 from tools import load_csv_data, create_csv_submission, prepareData
 
 # Data input and output paths
-DATA_TRAIN_PATH = '../data/train.csv' 
-DATA_TEST_PATH = '../data/test.csv'
-OUTPUT_PATH = '../data/predictions_out.csv'
+DATA_TRAIN_PATH = 'train.csv' 
+DATA_TEST_PATH = 'test.csv'
+OUTPUT_PATH = 'predictions_out.csv'
 
 
 def main():
