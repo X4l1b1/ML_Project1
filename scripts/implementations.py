@@ -81,12 +81,13 @@ def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
     w = initial_w
     loss = -1
 
-    for minibatch_y, minibatch_tx in batch_iter(y, tx, batch_size):
+    for minibatch_y, minibatch_tx in batch_iter(y, tx, batch_size, shuffle=False):
         for _ in range(max_iters):
             # Compute loss and gradient then update accordingly the weights
             loss = compute_mse_loss(minibatch_y, minibatch_tx, w)
             gradient = calculate_least_square_gradient(minibatch_y, minibatch_tx, w)
             w -= gamma * gradient
+            
 
     # Final loss
     loss = compute_mse_loss(y, tx, w)
@@ -111,7 +112,7 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
 
      # init parameters
     threshold = 1e-8
-    losses = collections.deque(maxlen=2)
+    losses = deque(maxlen=2)
     w = initial_w
 
     # start the logistic regression
@@ -137,14 +138,14 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     
      # init parameters
     threshold = 1e-8
-    losses = collections.deque(maxlen=2)
+    losses = deque(maxlen=2)
     w = initial_w
 
     # start the logistic regression
     for iter in range(max_iters):
         # get loss and update w.
         loss = compute_log_loss(y, tx, w) + lambda_ * lambda_*np.linalg.norm(w)**2
-        gradient = compute_logistic_gradient(y, tx, w) + 2*lambda_*w
+        gradient = compute_logistic_gradient(y, tx, w) + 2.0*lambda_*w
         w -= gamma*gradient
 
         # converge criterion
